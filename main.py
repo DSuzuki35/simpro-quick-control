@@ -7,9 +7,12 @@ from simpro import SimproClient
 from service import ControlService
 from server import make_server
 from input_reader import run_inputs
+from keyboard_reader import run_keyboard
+from version import __version__
 
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--headless',action='store_true');parser.add_argument('--port',type=int,default=18761)
+    parser.add_argument('--version',action='version',version=__version__)
     parser.add_argument('--data-dir');parser.add_argument('--startup',action='store_true');args=parser.parse_args()
     root=Path(sys.executable).parent if getattr(sys,'frozen',False) else Path(__file__).parent
     resources=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))
@@ -29,7 +32,7 @@ def main():
         set_startup(value);service.startup_enabled=startup_enabled()
     server.set_startup=configure_startup
     (data/'local-url.txt').write_text(url,'utf-8')
-    for target in (service.run,lambda:run_inputs(service),server.serve_forever):threading.Thread(target=target,daemon=True).start()
+    for target in (service.run,lambda:run_inputs(service),lambda:run_keyboard(service),server.serve_forever):threading.Thread(target=target,daemon=True).start()
     try:
         if args.headless:
             print(url,flush=True)

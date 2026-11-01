@@ -6,8 +6,11 @@ import shutil
 import subprocess
 import sys
 import zipfile
+import argparse
 
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
+from version import __version__
 NAME='SimPro Quick Control'
 
 def finish_package(folder,destination):
@@ -35,8 +38,15 @@ def finish_package(folder,destination):
 
 if __name__=='__main__':
     if sys.platform!='win32':raise SystemExit('Build on Windows with Python 3.12.')
+    parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,default=ROOT/'dist'/('v'+__version__));args=parser.parse_args()
+    output=args.output.resolve()
+    if (output/NAME/'data').exists():raise SystemExit('This output contains user data. Choose a different --output directory.')
+    build=ROOT/'build';build.mkdir(exist_ok=True)
+    numbers=tuple(int(n) for n in __version__.split('.'))+(0,)
+    version_file=build/'version-info.txt'
+    version_file.write_text("VSVersionInfo(ffi=FixedFileInfo(filevers="+repr(numbers)+",prodvers="+repr(numbers)+",mask=0x3f,flags=0,OS=0x40004,fileType=1,subtype=0,date=(0,0)),kids=[StringFileInfo([StringTable('040904B0',[StringStruct('FileDescription','SimPro Quick Control'),StringStruct('ProductName','SimPro Quick Control'),StringStruct('FileVersion','"+__version__+"'),StringStruct('ProductVersion','"+__version__+"')])]),VarFileInfo([VarStruct('Translation',[1033,1200])])])",'utf-8')
     subprocess.run([sys.executable,'-m','pytest','-q'],cwd=ROOT,check=True)
     subprocess.run([sys.executable,'-m','PyInstaller','--noconfirm','--windowed','--onedir','--name',NAME,
-                    '--icon',str(ROOT/'web'/'icon.ico'),'--add-data',str(ROOT/'web')+';web','--distpath',str(ROOT/'dist'),
+                    '--icon',str(ROOT/'web'/'icon.ico'),'--version-file',str(version_file),'--add-data',str(ROOT/'web')+';web','--distpath',str(output),
                     '--workpath',str(ROOT/'build'),'--specpath',str(ROOT/'build'),str(ROOT/'main.py')],cwd=ROOT,check=True)
-    finish_package(ROOT/'dist'/NAME,ROOT/'dist'/'SimPro-Quick-Control-Windows-x64.zip')
+    finish_package(output/NAME,output/'SimPro-Quick-Control-Windows-x64.zip')

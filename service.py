@@ -6,6 +6,8 @@ import time
 from collections import deque
 from pathlib import Path
 from core import SETTINGS,BY_KEY,Bindings,Visibility
+from keyboard_reader import validate_shortcut,shortcut_label
+from version import __version__
 
 SHARED={'increase','decrease','next','previous','show'}
 
@@ -17,7 +19,7 @@ class ControlService:
         self.client=client; self.path=Path(config_path);self.clock=clock or time.monotonic
         self.lock=threading.RLock();self.operation=threading.RLock();self.stop=threading.Event()
         self.wake=threading.Event();self.saved_config=None
-        self.config={'hide_after':5,'mode':'both','selected':'total_force','steps':{},'bindings':{},'acceleration':False,'auto_enable':False,
+        self.config={'hide_after':5,'mode':'both','selected':'total_force','steps':{},'bindings':{},'keyboard':{},'acceleration':False,'auto_enable':False,
                      'cycle':[s['key'] for s in SETTINGS if s['group'] in ('Basic','Mechanical','Other effects')]}
         self.bindings=Bindings();self.visibility=Visibility(5,self.clock());self.enabled=False
         self.snapshot={'connected':False,'values':{},'settings':[]};self.error='Connecting to SimPro…'
@@ -25,6 +27,7 @@ class ControlService:
         self.burst=None;self.burst_count=0;self.burst_at=-1;self.multiplier=1
         self.startup_enabled=False;self.manual_pause=False;self.write_fault=False;self.auto_pending=True
         self.quiet_startup=False
+        self.keyboard_revision=0;self.keyboard_errors={};self.keyboard_active=[]
         if self.path.exists():
             try:
                 loaded=json.loads(self.path.read_text('utf-8'))
@@ -56,6 +59,14 @@ class ControlService:
                 ident=(b['device'],b['button'])
                 if ident in seen: raise ValueError('One button can only have one action')
                 seen.add(ident)
+        if 'keyboard' in patch:
+            if not isinstance(patch['keyboard'],dict):raise ValueError('Invalid keyboard assignments')
+            seen=set()
+            for action,chord in patch['keyboard'].items():
+                if not valid_action(action):raise ValueError('Unknown keyboard action')
+                validate_shortcut(chord);ident=(chord['key'],chord['modifiers'])
+                if ident in seen:raise ValueError('One keyboard shortcut can only have one action')
+                seen.add(ident)
     def _save(self):
         encoded=json.dumps(self.config,indent=2)
         if encoded==self.saved_config:return
@@ -70,11 +81,13 @@ class ControlService:
             self._reset_burst()
             if patch.get('auto_enable'):self.auto_pending=True;self.manual_pause=False
             self.config.update(copy.deepcopy(patch));self.bindings.items=copy.deepcopy(self.config['bindings'])
+            if 'keyboard' in patch:self.keyboard_revision+=1
             self.visibility.timeout=self.config['hide_after'];self.visibility.activity(self.clock());self._save()
     def state(self):
         with self.lock:
             if self.learning and self.clock()>self.learn_until: self.learning=None
             return copy.deepcopy({**self.snapshot,'config':self.config,'enabled':self.enabled,'error':self.error,
+                'version':__version__,'keyboard_errors':self.keyboard_errors,'keyboard_active':self.keyboard_active,
                 'learning':self.learning,'devices':self.devices,'last_input':self.last_input,'input_error':self.input_error,'startup_enabled':self.startup_enabled,
                 'menu_visible':self.visibility.visible(self.clock()),'pending':len(self.queue),
                 'multiplier':self.multiplier if self.clock()-self.burst_at<=.25 else 1})
@@ -126,6 +139,15 @@ class ControlService:
             self.learning=None
             action=self.bindings.resolve(device,button)
             if not action:return
+            self._dispatch(action,device)
+    def keyboard(self,action,chord):
+        with self.lock:
+            if self.config['keyboard'].get(action)!=chord:return
+            if self.learning and self.clock()<=self.learn_until:return
+            self.last_input='Keyboard · '+shortcut_label(chord)
+            self._dispatch(action,'keyboard',accelerate=False)
+    def _dispatch(self,action,device,accelerate=True):
+        with self.lock:
             self.visibility.activity(self.clock())
             if action=='show':self._reset_burst();return
             if action in ('next','previous'):
@@ -147,7 +169,7 @@ class ControlService:
             now=self.clock();preset=self.snapshot['preset_id'];burst=(device,key,direction,preset)
             self.burst_count=self.burst_count+1 if burst==self.burst and 0<=now-self.burst_at<=.16 else 1
             self.burst=burst;self.burst_at=now
-            self.multiplier=(10 if self.burst_count>=16 else 5 if self.burst_count>=8 else 2 if self.burst_count>=4 else 1) if self.config['acceleration'] and not BY_KEY[key]['choices'] else 1
+            self.multiplier=(10 if self.burst_count>=16 else 5 if self.burst_count>=8 else 2 if self.burst_count>=4 else 1) if accelerate and self.config['acceleration'] and not BY_KEY[key]['choices'] else 1
             self.queue.append((now,key,self.multiplier*(1 if direction=='increase' else -1),preset))
             self.wake.set()
     def adjust(self,key,direction):

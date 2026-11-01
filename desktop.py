@@ -5,12 +5,13 @@ from pathlib import Path
 import sys
 import threading
 import webbrowser
+from version import __version__
 
 def run_desktop(service,server,url,data_dir):
     import tkinter as tk
     import pystray
     from PIL import Image
-    root=tk.Tk();root.withdraw();root.title('SimPro Quick Control')
+    root=tk.Tk();root.withdraw();root.title('SimPro Quick Control '+__version__)
     root.resizable(False,False);root.attributes('-topmost',True)
     root.configure(bg='#191c20');root.geometry('430x250+80+80')
     assets=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))/'web'

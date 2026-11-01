@@ -4,6 +4,7 @@ import secrets
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from urllib.parse import urlsplit
+from keyboard_reader import KEY_OPTIONS
 
 def make_server(service,web_dir,port=0):
     web_dir=Path(web_dir);token=secrets.token_urlsafe(32)
@@ -24,7 +25,7 @@ def make_server(service,web_dir,port=0):
         def do_GET(self):
             if not self.valid_host():return self.reply(403,{'error':'Invalid host'})
             path=urlsplit(self.path).path
-            if path=='/api/session':return self.reply(200,{'token':token})
+            if path=='/api/session':return self.reply(200,{'token':token,'keyboard_keys':KEY_OPTIONS})
             if path=='/api/state':
                 if not hmac.compare_digest(self.headers.get('X-Control-Token',''),token):return self.reply(403,{'error':'Open the local control page'})
                 return self.reply(200,service.state())

@@ -1,5 +1,7 @@
 # SimPro Quick Control
 
+Current release: **0.2.0** · [Changelog](CHANGELOG.md)
+
 Adjust SIMAGIC wheelbase tuning from assignable USB joystick buttons and button-mode encoders while driving. A compact desktop popup and a minimal VR browser page show the selected setting and live value.
 
 **[Download for Windows x64](https://github.com/DSuzuki35/simpro-quick-control/releases/latest/download/SimPro-Quick-Control-Windows-x64.zip)** · [All releases](https://github.com/DSuzuki35/simpro-quick-control/releases) · [Source code](https://github.com/DSuzuki35/simpro-quick-control)
@@ -10,6 +12,7 @@ Extract the **entire ZIP**, then run `SimPro Quick Control.exe`. Python is not r
 
 - 22 tuning and lighting controls exposed by the tested Alpha EVO Ultra configuration.
 - Shared encoder controls with next/previous setting selection, dedicated per-setting pairs, or both.
+- Assignable global keyboard shortcuts alongside every shared and dedicated USB action.
 - Per-setting increments; optional encoder acceleration from 1× to 2×, 5× and 10×.
 - Popup inactivity timeout: off, 3, 5, 10 seconds, or custom. Assigned input brings it back without requesting game focus.
 - Minimal VR page: setting name, value, configured Nm limit, live/paused status and active acceleration multiplier.
@@ -55,6 +58,18 @@ Together these options provide “ready when SimPro starts” behavior. There is
 Enable the toggle under **Button assignments**. It is off by default.
 
 With at most 160 ms between consecutive clicks in the same direction on the same setting/device, the 4th click uses 2×, the 8th 5×, and the 16th 10× the configured increment. A pause, reversal or target change resets the ramp. Choice settings do not accelerate. All output remains clamped to the setting's range.
+
+## Keyboard shortcuts
+
+In **Button assignments**, click **Keyboard** beside a shared action or a dedicated setting's increase/decrease action. Choose a key and optional Ctrl/Alt/Shift modifiers, then save. USB and keyboard assignments coexist; clearing one does not clear the other. Shortcuts start unassigned.
+
+![Keyboard shortcut picker](docs/keyboard-shortcut.png)
+
+Shortcuts are registered with Windows and work while another application has focus, including in VR-only mode. A letter, number or navigation key needs Ctrl or Alt; function keys can be used alone. F12 and Windows-key combinations are not offered because Windows reserves them. Duplicate assignments are rejected, and unavailable combinations are flagged in the UI. Choose another combination if a game, application or Windows already uses it.
+
+Each press applies one configured increment. Holding a shortcut does not repeat, and encoder acceleration does not affect keyboard shortcuts. Controls must be enabled for value changes; next/previous selection and Show popup remain available while paused. Shortcuts do nothing during USB learning. Assigned combinations are reserved for the controller and may not reach the foreground application, so choose combinations that do not conflict with your game's bindings.
+
+To upgrade from 0.1.0, quit the old controller, extract 0.2.0, and copy your old `data/config.json` into the new application's `data` folder. Existing USB assignments and preferences load without conversion. If Windows startup was enabled, disable it before moving and re-enable it from the new executable.
 
 ## Compatibility
 
@@ -108,7 +123,7 @@ Build the executable and distributable ZIP:
 .venv\Scripts\python tools\build_release.py
 ```
 
-Output: `dist/SimPro-Quick-Control-Windows-x64.zip`. See [architecture](docs/architecture.md) for the module map and integration contract. The release source is tagged alongside the binary.
+Output: `dist/v0.2.0/SimPro-Quick-Control-Windows-x64.zip`. Use `--output <directory>` for another build destination. The builder refuses to overwrite a package containing runtime user data. See [architecture](docs/architecture.md) for the module map and integration contract. The release source is tagged alongside the binary.
 
 Tests cover control limits, sign handling, mappings, acceleration, queue ordering/expiry, disconnect handling, inactive visibility, readback confirmation, HTTP protection and avoiding unnecessary disk writes. Physical encoder timing, headset rendering and other SimPro releases still need testing on each user's setup.
 

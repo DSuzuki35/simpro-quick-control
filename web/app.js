@@ -3,6 +3,7 @@ const $=id=>document.getElementById(id);
 const overlay=new URLSearchParams(location.search).has('overlay');
 document.body.classList.toggle('overlay',overlay);
 let token='',state=null,structure='',bindingSignature='',busy=false,toastTimer;
+let shortcutAction=null,keyOptions=[];
 const labels={increase:'Increase selected',decrease:'Decrease selected',next:'Next setting',previous:'Previous setting',show:'Show popup'};
 function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,4500)}
 async function api(path,data){
@@ -17,10 +18,22 @@ function cycle(direction){if(!state)return;const keys=state.config.cycle.filter(
 async function adjust(direction){if(busy||!state)return;busy=true;try{await act('adjust',{key:state.config.selected,direction})}finally{busy=false}}
 function tab(name){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===name))}
 function makeBinding(action){
+ const outer=document.createElement('div');outer.className='binding-pair';
  const wrap=document.createElement('div');wrap.className='binding-action';
  const learn=document.createElement('button');learn.className='learn-button';learn.dataset.action=action;learn.textContent='Learn';learn.onclick=()=>act('learn',{action});
  const clear=document.createElement('button');clear.className='clear-button';clear.textContent='×';clear.title='Clear assignment';clear.setAttribute('aria-label','Clear '+(labels[action]||action));
- clear.onclick=()=>{const bindings={...state.config.bindings};delete bindings[action];act('config',{bindings})};wrap.append(learn,clear);return wrap;
+ clear.onclick=()=>{const bindings={...state.config.bindings};delete bindings[action];act('config',{bindings})};wrap.append(learn,clear);
+ const keys=document.createElement('div');keys.className='binding-action';
+ const keyButton=document.createElement('button');keyButton.className='learn-button keyboard-button';keyButton.dataset.shortcut=action;keyButton.textContent='Keyboard';keyButton.onclick=()=>openShortcut(action);
+ const clearKey=document.createElement('button');clearKey.className='clear-button';clearKey.textContent='×';clearKey.setAttribute('aria-label','Clear keyboard '+(labels[action]||action));clearKey.onclick=()=>{const keyboard={...state.config.keyboard};delete keyboard[action];act('config',{keyboard})};
+ keys.append(keyButton,clearKey);outer.append(wrap,keys);return outer;
+}
+function chordLabel(chord){return [chord.modifiers&2?'Ctrl':'',chord.modifiers&1?'Alt':'',chord.modifiers&4?'Shift':'',keyOptions.find(x=>x.key===chord.key)?.label||chord.key].filter(Boolean).join('+')}
+function openShortcut(action){
+ $('shortcutError').hidden=true;
+ shortcutAction=action;const chord=state.config.keyboard?.[action]||{key:'F9',modifiers:3};
+ const parts=action.split(':');const name=labels[action]||`${state.settings.find(s=>s.key===parts[0])?.label||parts[0]} · ${parts[1]}`;
+ $('shortcutTitle').textContent=name;$('keyCtrl').checked=!!(chord.modifiers&2);$('keyAlt').checked=!!(chord.modifiers&1);$('keyShift').checked=!!(chord.modifiers&4);$('shortcutKey').value=chord.key;$('shortcutDialog').showModal();
 }
 function build(settings){
  $('settingList').replaceChildren();$('dedicatedBindings').replaceChildren();
@@ -56,11 +69,14 @@ function render(){
  }
  $('minus').disabled=$('plus').disabled=!s.enabled||!connected;
  if(overlay)return;
+ text($('appVersion'),'SIMPRO QUICK CONTROL / '+s.version);
+ const keyboardProblems=Object.values(s.keyboard_errors||{});$('keyboardProblems').hidden=!keyboardProblems.length;text($('keyboardProblems'),keyboardProblems.join('. '));
  $('startWindows').checked=!!s.startup_enabled;$('autoEnable').checked=!!s.config.auto_enable;
  const compat=s.compatibility;text($('compatibility'),compat?`SimPro ${compat.detected} · ${compat.experimental?'Experimental compatibility — optimized and tested with '+compat.tested:'Tested version'}`:'Optimized and tested with SimPro 3.2.4.13771. Other versions are experimental.');
  text($('settingCount'),s.settings.length+' controls');
  document.querySelectorAll('.setting-row').forEach(row=>{row.classList.toggle('selected',row.dataset.key===s.config.selected);const setting=s.settings.find(x=>x.key===row.dataset.key);text(row.querySelector('strong'),display(setting,s.values[setting.key]))});
- const bs=JSON.stringify([s.config,s.learning]);if(bs!==bindingSignature){bindingSignature=bs;
+ const bs=JSON.stringify([s.config,s.learning,s.keyboard_errors,s.keyboard_active]);if(bs!==bindingSignature){bindingSignature=bs;
+  document.querySelectorAll('[data-shortcut]').forEach(b=>{const action=b.dataset.shortcut,chord=s.config.keyboard?.[action],error=s.keyboard_errors?.[action];text(b,chord?chordLabel(chord):'Keyboard');b.classList.toggle('assigned',!!chord&&!error);b.classList.toggle('conflict',!!error);b.title=error||(chord?'Global keyboard shortcut':'Assign a global keyboard shortcut');});
   document.querySelectorAll('[data-action]').forEach(b=>{const binding=s.config.bindings[b.dataset.action];b.classList.toggle('assigned',!!binding);text(b,s.learning===b.dataset.action?'Listening…':binding?`Button ${binding.button+1}`:'Learn');b.title=binding?binding.device.split('|').at(-1):'Press a USB button or turn an encoder'});
   document.querySelectorAll('[data-step]').forEach(i=>{if(document.activeElement!==i)i.value=s.config.steps[i.dataset.step]||s.settings.find(x=>x.key===i.dataset.step)?.step||1});
   document.querySelectorAll('[data-cycle]').forEach(i=>i.checked=s.config.cycle.includes(i.dataset.cycle));
@@ -79,9 +95,11 @@ $('acceleration').onchange=()=>act('config',{acceleration:$('acceleration').chec
 $('quitController').onclick=()=>act('quit');
 $('startWindows').onchange=()=>act('startup',{enabled:$('startWindows').checked});
 $('autoEnable').onchange=()=>act('config',{auto_enable:$('autoEnable').checked});
+$('cancelShortcut').onclick=()=>$('shortcutDialog').close();
+$('shortcutForm').onsubmit=async event=>{event.preventDefault();const chord={key:$('shortcutKey').value,modifiers:($('keyCtrl').checked?2:0)|($('keyAlt').checked?1:0)|($('keyShift').checked?4:0)};try{await api('config',{keyboard:{...state.config.keyboard,[shortcutAction]:chord}});$('shortcutDialog').close();await refresh()}catch(e){$('shortcutError').textContent=e.message;$('shortcutError').hidden=false}};
 $('hideAfter').onchange=()=>{const custom=$('hideAfter').value==='custom';$('customDelayLabel').hidden=!custom;if(!custom)act('config',{hide_after:Number($('hideAfter').value)})};
 $('applyDelay').onclick=()=>{const delay=Number($('customDelay').value);if(!Number.isFinite(delay)||delay<1||delay>600)return toast('Choose a delay from 1 to 600 seconds.');act('config',{hide_after:delay})};
 $('showMenu').onclick=$('previewPopup').onclick=()=>act('show');$('overlaySettings').onclick=()=>act('open-settings');$('overlayHide').onclick=()=>act('hide');
 async function poll(){await refresh();setTimeout(poll,document.hidden?2000:overlay&&state&&!state.menu_visible?1000:300)}
-async function start(){try{token=(await fetch('/api/session').then(r=>r.json())).token;poll()}catch(e){toast('Could not connect to the local controller.')}}
+async function start(){try{const session=await fetch('/api/session').then(r=>r.json());token=session.token;keyOptions=session.keyboard_keys||[];for(const item of keyOptions){const option=document.createElement('option');option.value=item.key;option.textContent=item.label;$('shortcutKey').append(option)}poll()}catch(e){toast('Could not connect to the local controller.')}}
 start();

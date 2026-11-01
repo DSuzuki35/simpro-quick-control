@@ -25,7 +25,8 @@
   <p class="footnote browser-only">Changes apply immediately to the active SimPro preset. Save it in SimPro when you want to keep your tuning.</p>
  </section>
  <section id="bindings" class="page browser-only">
-  <div class="panel"><div class="panel-heading"><div><h2>Make it yours.</h2><p class="muted">Choose Learn, then press a button or turn an encoder one click.</p></div><label>Control mode<select id="mode"><option value="both">Shared + dedicated</option><option value="shared">Shared encoder</option><option value="dedicated">Dedicated pairs</option></select></label></div>
+  <div class="panel"><div class="panel-heading"><div><h2>Make it yours.</h2><p class="muted">Learn a USB button/encoder, or choose Keyboard to assign a global shortcut. Both can control the same action.</p></div><label>Control mode<select id="mode"><option value="both">Shared + dedicated</option><option value="shared">Shared encoder</option><option value="dedicated">Dedicated pairs</option></select></label></div>
+   <p id="keyboardProblems" class="learning" role="alert" hidden></p>
    <div id="learning" class="learning" hidden><span id="learnText"></span><button id="cancelLearn" class="quiet">Cancel</button></div>
    <label class="acceleration"><input id="acceleration" type="checkbox">Encoder acceleration</label><p class="footnote">Fast continuous turns ramp to 2×, 5×, then 10× your step. Pause or reverse to return to 1×. Applies to USB numeric adjustments.</p>
    <h3>Shared controls</h3><div id="sharedBindings" class="binding-grid"></div>
@@ -44,6 +45,7 @@
    <div class="note"><strong>Minimal VR readout</strong><p>Only the selected setting, value, and torque limit. Add this local page to your VR overlay browser and size it around 550 × 210. Transparency depends on your overlay application.</p><p><a href="/vr" target="_blank" rel="noopener">Open VR view</a> · <a href="/vr?always=1" target="_blank" rel="noopener">Always-visible VR view</a></p><p>The VR card fades after the same inactivity delay and returns on assigned input. It does not close your VR overlay host.</p></div>
  </div></section>
  </main>
- <footer class="browser-only"><span>LOCAL CONNECTION · SIMPRO MANAGER 3</span><span>WHEELBASE CONTROL / 01</span></footer>
+ <footer class="browser-only"><span>LOCAL CONNECTION · SIMPRO MANAGER 3</span><span id="appVersion">SIMPRO QUICK CONTROL</span></footer>
 </div><div id="toast" role="status" hidden></div>
+<dialog id="shortcutDialog"><form id="shortcutForm"><p class="eyebrow">GLOBAL KEYBOARD SHORTCUT</p><h2 id="shortcutTitle">Assign shortcut</h2><p class="muted">Works while the game has focus. Choose an unused combination.</p><div class="key-modifiers"><label><input type="checkbox" id="keyCtrl">Ctrl</label><label><input type="checkbox" id="keyAlt">Alt</label><label><input type="checkbox" id="keyShift">Shift</label></div><label class="field">Key<select id="shortcutKey"></select></label><p class="footnote">Letters, numbers and navigation keys need Ctrl or Alt. Function keys can be used alone. F12 and Windows-key shortcuts are reserved.</p><p id="shortcutError" class="learning" role="alert" hidden></p><div class="dialog-actions"><button id="cancelShortcut" type="button" class="quiet">Cancel</button><button type="submit" class="primary">Save shortcut</button></div></form></dialog>
 </body></html>

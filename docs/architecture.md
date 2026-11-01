@@ -27,6 +27,12 @@ No proprietary SimPro binaries, cached frontend bundles, user presets or device 
 
 User actions update a monotonic inactivity timestamp. Polling does not. The desktop host calls `ShowWindow(SW_SHOWNOACTIVATE)` and `SetWindowPos(SWP_NOACTIVATE)`; hiding affects the entire native window. `/vr` instead fades its card, since the page cannot close or hide a third-party VR host.
 
+## Keyboard shortcuts (0.2.0)
+
+`keyboard_reader.py` uses Windows `RegisterHotKey` with `MOD_NOREPEAT`. It waits for native hotkey messages, with a 250 ms timeout for configuration/shutdown checks; it does not install a global keyboard hook or record other keystrokes. Registration conflicts are reported separately from USB errors. Changes unregister previous bindings and allocate fresh message IDs, preventing old messages from targeting new bindings. The service also checks the captured chord against the current assignment before dispatch.
+
+USB and keyboard actions share the same queue, range checks and write-confirmation path. Keyboard actions do not accelerate and are ignored during USB learning. F12 and Windows-key combinations are excluded according to the [Windows registration contract](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey).
+
 ## Resource choices
 
 There is no frontend framework or JavaScript build pipeline. The backend sleeps between work, caches optional version metadata, avoids unchanged preference writes and skips copying the full state for hidden native visibility checks. Unassigned USB controllers are closed except during learning. `--headless` does not import Tk or the tray library. All data remains local.

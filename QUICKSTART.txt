@@ -1,5 +1,7 @@
 SIMPRO QUICK CONTROL — portable Windows app
 
+Version 0.2.0
+
 Start
 1. Keep SimPro Manager running, with your Alpha EVO Ultra connected.
 2. Run SimPro Quick Control.exe. Keep its _internal folder alongside it.
@@ -8,6 +10,19 @@ Start
    your encoder one click. Repeat for Decrease selected, Next and Previous.
    Alternatively assign dedicated increase/decrease pairs for any setting.
 5. Click Enable controls. Controls start paused by default.
+
+Keyboard shortcuts
+Click Keyboard beside any shared or dedicated action. Choose a key and
+Ctrl/Alt/Shift modifiers, then Save shortcut. USB assignments remain available.
+Letters/numbers/navigation require Ctrl or Alt; function keys can be used alone.
+F12 and Windows-key shortcuts are reserved. Unavailable shortcuts are flagged.
+Shortcuts work globally, including VR-only mode. Use unused combinations:
+registered shortcuts may not reach the game. One press applies one configured
+step; holding does not repeat. Keyboard shortcuts do not use acceleration.
+
+Upgrade from 0.1.0
+Quit the old controller and copy its data/config.json into the new app's data
+folder. Disable Windows startup before moving, then enable it from the new app.
 
 Optional startup settings
 Display offers Start with Windows and Auto-enable when SimPro connects.
