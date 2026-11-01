@@ -1,0 +1,77 @@
+SIMPRO QUICK CONTROL — portable Windows app
+
+Start
+1. Keep SimPro Manager running, with your Alpha EVO Ultra connected.
+2. Run SimPro Quick Control.exe. Keep its _internal folder alongside it.
+3. Open http://127.0.0.1:18761/ (also available from the tray icon).
+4. In Button assignments, choose Learn beside Increase selected, then turn
+   your encoder one click. Repeat for Decrease selected, Next and Previous.
+   Alternatively assign dedicated increase/decrease pairs for any setting.
+5. Click Enable controls. Controls start paused by default.
+
+Optional startup settings
+Display offers Start with Windows and Auto-enable when SimPro connects.
+Both are off by default. Login startup waits quietly for SimPro. Auto-enable
+can resume after connection loss; a manual pause or unconfirmed write still
+requires explicit enable. Disable login startup before moving the app folder.
+
+Encoder acceleration
+Optional toggle in Button assignments, off by default. With gaps of no more
+than 160 ms between clicks, the 4th click uses 2x, the 8th 5x, and the 16th 10x
+your configured step. Pausing, reversing, changing setting or device resets
+the ramp. Choice settings never accelerate. Holding a button does not repeat.
+All values remain clamped to the verified SimPro ranges.
+
+VR readout
+Add http://127.0.0.1:18761/vr to a VR overlay browser. Suggested size 550x210.
+It displays only setting, value, torque limit for FFB strength, live/paused
+state, and the active acceleration multiplier. The page surroundings are
+transparent; actual transparency depends on your VR overlay application.
+The card fades with the configured inactivity timer and returns on assigned
+input. Use /vr?always=1 to keep the card visible. This is a browser source,
+not an OpenXR/SteamVR overlay injector; you supply the overlay host.
+
+Popup
+Display offers Off, 3s, 5s, 10s, or a custom timeout. The entire desktop popup
+hides, then returns without requesting focus when an assigned control is used.
+Drag the BASIC/group or status text along the popup's top edge to position it.
+The tray icon opens settings, shows the popup, pauses controls, or quits.
+Exclusive fullscreen can cover desktop overlays; use borderless/windowed mode.
+
+Scope and persistence
+22 verified tuning/light controls, including FFB strength, mechanical and game
+effects, steering limits, reverse, and ring lighting. No calibration, firmware,
+torque unlock, or raw force injection. Nm is the configured output limit, not
+a measured instantaneous force. Hardware verification: SimPro 3.2.4.13771,
+Alpha EVO Ultra (28 Nm). Other wheelbase models are intentionally rejected.
+Changes affect the active live preset. Save in SimPro to retain your tuning.
+Assignments, steps, selected setting, acceleration, and timer are stored in
+data/config.json alongside the executable. Reverse direction at zero strength
+is remembered during this app session; SimPro stores zero without a sign.
+
+USB notes
+Encoders must emit joystick button presses. Background input is supported.
+Assignments do not consume input: remove conflicting in-game assignments.
+Reconnects suppress initially held buttons. Identical devices with the same
+reported name/GUID are ignored because they cannot be matched reliably.
+Physical encoder behavior and your particular VR host still need your test.
+
+Telemetry FFB
+The installed SimPro exposes built-in effect configuration for detail,
+understeer, oversteer, crash/curb protection, ABS, lock/spin, gear shifts and
+engine RPM. These are a promising next integration, but are not exposed in
+this build. A preset setting API is not evidence of a real-time torque-stream
+API. No arbitrary telemetry-generated torque injection has been verified.
+
+Troubleshooting
+Keep SimPro open. After disconnect/error, resolve the cause then Enable again.
+The controller checks readback after each write and does not retry uncertain
+writes. Late queued clicks are discarded. Diagnostics: data/controller.log.
+The local web server binds only to 127.0.0.1; no cloud account is used.
+
+Source and build
+Source and releases: https://github.com/DSuzuki35/simpro-quick-control
+Python 3.12: install requirements.txt, run python main.py.
+Tests: python -m pytest -q
+Build: python tools/build_release.py
+Third-party components retain their own licenses in THIRD-PARTY-LICENSES.
