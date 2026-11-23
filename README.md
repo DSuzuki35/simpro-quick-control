@@ -92,7 +92,7 @@ The adapter uses fresh `pedals` preset configuration, preserves other fields, an
 
 Hardware check: SimPro 3.2.5.13819 with P-Active V1.0.18 reported the brake role. Press damping was changed 23 → 22 → 23 and all other pedal fields were preserved; wheelbase force remained unchanged. Other roles use the same discovered schema but were not physically tested. The version advisory describes SimPro releases tested with the wheelbase, not every possible device/firmware combination.
 
-This release does not add force/travel curves, telemetry effect editing, or arbitrary motor-position control. [Motion research](docs/pactive-motion-research.md) explains the discovered record/playback command and the remaining limitations for a rudder mode.
+This release does not add force/travel curves, telemetry effect editing, or arbitrary motor-position control. [Motion research](docs/pactive-motion-research.md) documents a candidate position endpoint, the firmware inspection, and the remaining readback and operating-mode limitations for a rudder mode. No active movement through that endpoint has been demonstrated.
 
 ## Telemetry FFB
 
