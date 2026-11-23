@@ -1,9 +1,9 @@
 SIMPRO QUICK CONTROL — portable Windows app
 
-Version 0.2.1
+Version 0.3.0
 
 Start
-1. Keep SimPro Manager running, with your Alpha EVO Ultra connected.
+1. Keep SimPro Manager running, with your Alpha EVO Ultra or P-Active connected.
 2. Run SimPro Quick Control.exe. Keep its _internal folder alongside it.
 3. Open http://127.0.0.1:18761/ (also available from the tray icon).
 4. In Button assignments, choose Learn beside Increase selected, then turn
@@ -54,6 +54,15 @@ The tray icon opens settings, shows the popup, pauses controls, or quits.
 Exclusive fullscreen can cover desktop overlays; use borderless/windowed mode.
 
 Scope and persistence
+P-Active: eight controls for its reported active role: damping on/off,
+press/release damping, friction on/off, press/release friction, front/back stop.
+Use the same USB or keyboard assignments. P-Active also works without a base.
+One P-Active controller is supported. Brake-role hardware check: SimPro
+3.2.5.13819, P-Active V1.0.18. Other roles have not been hardware-tested.
+No force/travel curve editor, direct position commands, or rudder mode.
+Losing/changing the selected device, pedal role or preset pauses controls;
+check the selection and enable again. Existing bindings remain available.
+
 22 verified tuning/light controls, including FFB strength, mechanical and game
 effects, steering limits, reverse, and ring lighting. No calibration, firmware,
 torque unlock, or raw force injection. Nm is the configured output limit, not

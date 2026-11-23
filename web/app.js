@@ -36,6 +36,7 @@ function openShortcut(action){
  $('shortcutTitle').textContent=name;$('keyCtrl').checked=!!(chord.modifiers&2);$('keyAlt').checked=!!(chord.modifiers&1);$('keyShift').checked=!!(chord.modifiers&4);$('shortcutKey').value=chord.key;$('shortcutDialog').showModal();
 }
 function build(settings){
+ bindingSignature='';
  $('settingList').replaceChildren();$('dedicatedBindings').replaceChildren();
  let group='';for(const setting of settings){
   if(group!==setting.group){group=setting.group;const heading=document.createElement('div');heading.className='setting-group';heading.textContent=group;$('settingList').append(heading)}
@@ -53,19 +54,20 @@ function build(settings){
 function render(){
  const s=state;const connected=s.connected;
  text($('connection'),connected?'SimPro connected':'SimPro offline');$('connection').classList.toggle('connected',connected);
- $('error').hidden=!s.error&&!s.input_error;text($('error'),s.error||s.input_error||'');
- text($('rigName'),connected?`${s.device} · ${s.max_torque} Nm · ${s.preset_name}`:'Keep SimPro Manager open and connect your wheelbase.');
+ const warnings=(s.device_warnings||[]).join(' ');$('error').hidden=!s.error&&!s.input_error&&!warnings;text($('error'),s.error||s.input_error||warnings);
+ text($('rigName'),connected?`${s.device}${s.max_torque?' · '+s.max_torque+' Nm':''}`:'Keep SimPro Manager open and connect your wheelbase or P-Active.');
  text($('enable'),s.enabled?'Controls enabled · Pause':'Enable controls');$('enable').classList.toggle('on',s.enabled);$('enable').disabled=!connected;
  text($('live'),s.enabled?'CONTROLS LIVE':connected?'CONTROLS PAUSED':'SIMPRO OFFLINE');$('live').classList.toggle('on',s.enabled);
  const sig=JSON.stringify(s.settings.map(x=>x.key));if(!overlay&&sig!==structure){structure=sig;build(s.settings)}
  const selected=s.settings.find(x=>x.key===s.config.selected);if(selected){
+  const context=s.setting_context?.[selected.key];const preset=context?.preset_name||s.preset_name;
   const value=s.values[selected.key];text($('selectedLabel'),selected.label);text($('selectedGroup'),selected.group.toUpperCase());
   text($('value'),selected.choices?selected.choices[value]:value);text($('unit'),selected.choices?'':selected.unit);
-  let secondary=selected.key==='total_force'?`${(value*s.max_torque/100).toFixed(2)} Nm · ${s.values.reverse?'reversed direction':'base output limit'}`:selected.choices?'Use + / − to choose':`Live value · ${s.preset_name}`;
+  let secondary=selected.key==='total_force'?`${(value*s.max_torque/100).toFixed(2)} Nm · ${s.values.reverse?'reversed direction':'base output limit'}`:`${context?.device||s.device} · ${preset}`;
   if(!connected)secondary='Disconnected — values may be stale';text($('secondary'),secondary);
   $('meterFill').style.width=Math.max(0,Math.min(100,100*(value-selected.min)/(selected.max-selected.min)))+'%';
   text($('rangeMin'),selected.choices?selected.choices[0]:selected.min+selected.unit);text($('rangeMax'),selected.choices?selected.choices.at(-1):selected.max+selected.unit);
-  text($('stepLabel'),selected.choices?'select':`${(s.config.steps[selected.key]||selected.step)*(s.multiplier||1)}${selected.unit} / click${s.multiplier>1?' · ×'+s.multiplier:''}`);text($('preset'),s.preset_name);
+  text($('stepLabel'),selected.choices?'select':`${(s.config.steps[selected.key]||selected.step)*(s.multiplier||1)}${selected.unit} / click${s.multiplier>1?' · ×'+s.multiplier:''}`);text($('preset'),preset);
  }
  $('minus').disabled=$('plus').disabled=!s.enabled||!connected;
  if(overlay)return;

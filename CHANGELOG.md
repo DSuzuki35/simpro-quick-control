@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 — 2026-11-23
+
+- Add eight P-Active tuning controls for its reported active pedal role, alongside existing wheelbase controls or without a wheelbase.
+- Reuse assignable USB buttons, keyboard shortcuts, encoder acceleration and the minimal VR page for pedal settings.
+- Bind queued adjustments to each setting's physical device, preset and role. Pause when the selected target disappears or changes.
+- Preserve unknown pedal configuration fields and validate fresh values immediately before writing.
+- Document the discovered factory record/playback interface; no direct motor-motion controls or firmware changes are included.
+
 ## 0.2.1 — 2026-11-23
 
 - Verified live reads and reversible writes with installed SimPro 3.2.5.13819 and Alpha EVO Ultra firmware V2.3.8; no API adapter change was needed.

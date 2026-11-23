@@ -20,7 +20,7 @@ class ControlService:
         self.lock=threading.RLock();self.operation=threading.RLock();self.stop=threading.Event()
         self.wake=threading.Event();self.saved_config=None
         self.config={'hide_after':5,'mode':'both','selected':'total_force','steps':{},'bindings':{},'keyboard':{},'acceleration':False,'auto_enable':False,
-                     'cycle':[s['key'] for s in SETTINGS if s['group'] in ('Basic','Mechanical','Other effects')]}
+                     'cycle':[s['key'] for s in SETTINGS if s['group'] in ('Basic','Mechanical','Other effects') or s.get('device')=='pactive']}
         self.bindings=Bindings();self.visibility=Visibility(5,self.clock());self.enabled=False
         self.snapshot={'connected':False,'values':{},'settings':[]};self.error='Connecting to SimPro…'
         self.learning=None;self.learn_until=0;self.queue=deque(maxlen=64);self.devices=[];self.last_input='';self.input_error=''
@@ -108,12 +108,22 @@ class ControlService:
                 state=self.client.snapshot()
                 with self.lock:
                     newly_connected=not self.snapshot['connected']
+                    key=self.config['selected']
+                    old_target=self.snapshot.get('setting_presets',{}).get(key,self.snapshot.get('preset_id'))
+                    new_target=state.get('setting_presets',{}).get(key,state.get('preset_id'))
+                    target_changed=self.enabled and (key not in state['values'] or old_target!=new_target)
+                    if target_changed:
+                        self.enabled=False;self.write_fault=True;self.queue.clear();self._reset_burst()
                     self.snapshot=state;self.error=''
+                    if target_changed:self.error='Selected device, role or preset changed. Check the selection and enable controls again.'
                     self.quiet_startup=False
                     if self.config['auto_enable'] and (newly_connected or self.auto_pending) and not self.manual_pause and not self.write_fault and not self.input_error:
                         self.enabled=True;self.queue.clear();self._reset_burst()
                     self.auto_pending=False
-                    if self.config['selected'] not in state['values']: self.config['selected']='total_force'
+                    if self.config['selected'] not in state['values']:
+                        self.config['selected']='total_force' if 'total_force' in state['values'] else next(iter(state['values']))
+                    if not any(k in state['values'] for k in self.config['cycle']):
+                        self.config['cycle']=list(dict.fromkeys(self.config['cycle']+list(state['values'])))
             except Exception as exc:self._failed(exc,latch=False)
     def enable(self,enabled):
         if type(enabled) is not bool:raise ValueError('Invalid enabled state')
@@ -166,7 +176,7 @@ class ControlService:
                 if self.config['mode']=='dedicated':return
                 key=self.config['selected'];direction=action
             if key not in self.snapshot['values']:return
-            now=self.clock();preset=self.snapshot['preset_id'];burst=(device,key,direction,preset)
+            now=self.clock();preset=self.snapshot.get('setting_presets',{}).get(key,self.snapshot['preset_id']);burst=(device,key,direction,preset)
             self.burst_count=self.burst_count+1 if burst==self.burst and 0<=now-self.burst_at<=.16 else 1
             self.burst=burst;self.burst_at=now
             self.multiplier=(10 if self.burst_count>=16 else 5 if self.burst_count>=8 else 2 if self.burst_count>=4 else 1) if accelerate and self.config['acceleration'] and not BY_KEY[key]['choices'] else 1
@@ -177,7 +187,8 @@ class ControlService:
         with self.operation:
             with self.lock:
                 if not self.enabled:raise ValueError('Enable controls before adjusting')
-                step=self.config['steps'].get(key,BY_KEY[key]['step']);preset=self.snapshot.get('preset_id')
+                if key not in self.snapshot['values']:raise ValueError('Setting is unavailable')
+                step=self.config['steps'].get(key,BY_KEY[key]['step']);preset=self.snapshot.get('setting_presets',{}).get(key,self.snapshot.get('preset_id'))
                 self.config['selected']=key
             try:
                 state=self.client.adjust(key,direction,step,expected_preset=preset)

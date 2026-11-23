@@ -19,7 +19,7 @@ async function poll(){
   const v=s.values[setting.key];el('label').textContent=setting.label;
   el('status').textContent=s.enabled?`LIVE${s.multiplier>1?' ×'+s.multiplier:''}`:'PAUSED';el('status').className=s.enabled?'live':'';
   el('value').textContent=setting.choices?setting.choices[v]:v;el('unit').textContent=setting.choices?'':setting.unit;
-  el('secondary').textContent=setting.key==='total_force'?`${(v*s.max_torque/100).toFixed(1)} Nm`:'';
+  el('secondary').textContent=setting.key==='total_force'?`${(v*s.max_torque/100).toFixed(1)} Nm`:setting.device==='pactive'?setting.group:'';
   el('bar').style.width=Math.max(0,Math.min(100,(v-setting.min)/(setting.max-setting.min)*100))+'%';
   el('readout').classList.remove('offline');el('readout').classList.toggle('idle',!always&&!s.menu_visible);
  }catch{disconnected();}finally{setTimeout(poll,document.hidden?2000:200);}

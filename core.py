@@ -30,6 +30,24 @@ SETTINGS = [
     setting('brightness','Ring light brightness','Lights',0,100,'%',part='global'),
     setting('ring_on','Ring light','Lights',0,1,choices=['Off','On'],part='light_groups',field='is_on'),
 ]
+BASE_SETTINGS = list(SETTINGS)
+PEDAL_SETTINGS = []
+for part_id, role in ((1,'Clutch'),(2,'Brake'),(3,'Throttle')):
+    for field,label,maximum,choices in (
+        ('is_damping','Damping',1,['Off','On']),
+        ('damp_pressed','Press damping',100,None),
+        ('damp_released','Release damping',100,None),
+        ('is_friction','Friction',1,['Off','On']),
+        ('friction_strength','Press friction',100,None),
+        ('rev_friction_strength','Release friction',100,None),
+        ('front_stop_level','Front stop',2,['Soft','Normal','Firm']),
+        ('back_stop_level','Back stop',2,['Soft','Normal','Firm']),
+    ):
+        item=setting(f'pactive_{part_id}_{field}',label,'P-Active '+role,0,maximum,
+                     '%' if maximum==100 else '',choices=choices,part='pedals',field=field)
+        item.update(device='pactive',part_id=part_id,boolean=field.startswith('is_'))
+        PEDAL_SETTINGS.append(item)
+SETTINGS += PEDAL_SETTINGS
 BY_KEY = {s['key']:s for s in SETTINGS}
 
 def value_of(current, key):
@@ -54,7 +72,7 @@ def adjusted_config(current, key, delta, step=1):
     elif key=='total_force': out['total_force']=math.copysign(value,current['total_force'])
     elif key=='max_wheel_angle': out.update(max_wheel_angle=value,wheel_angle_limit=value)
     elif key=='ring_on': out['is_on']=bool(value)
-    else: out[s['field']]=value
+    else: out[s['field']]=bool(value) if s.get('boolean') else value
     return out
 
 class Bindings:

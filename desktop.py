@@ -85,7 +85,7 @@ def run_desktop(service,server,url,data_dir):
                     number=state['values'][key];choices=setting['choices']
                     group.configure(text=setting['group'].upper());title.configure(text=setting['label'])
                     value.configure(text=choices[number] if choices else f'{number}{setting["unit"]}')
-                    secondary.configure(text=f'{number*state["max_torque"]/100:.2f} Nm · base output limit' if key=='total_force' else 'Live SimPro value')
+                    secondary.configure(text=f'{number*state["max_torque"]/100:.2f} Nm · base output limit' if key=='total_force' else setting['group']+' · live SimPro value')
                     multiplier=state['multiplier'];increment=state['config']['steps'].get(key,setting['step'])*multiplier
                     step.configure(text='Select' if choices else f'{increment}{setting["unit"]} / click'+(f' · ×{multiplier}' if multiplier>1 else ''))
                     meter.coords(fill,0,0,386*max(0,min(1,(number-setting['min'])/(setting['max']-setting['min']))),3)

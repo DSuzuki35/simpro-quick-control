@@ -6,7 +6,7 @@ import time
 from http.client import HTTPConnection
 from urllib.parse import urlsplit
 import re
-from core import SETTINGS,BY_KEY,value_of,adjusted_config
+from core import BASE_SETTINGS,BY_KEY,value_of,adjusted_config
 
 TESTED_VERSIONS=('3.2.4.13771','3.2.5.13819')
 TESTED_LABEL=', '.join(TESTED_VERSIONS)
@@ -43,23 +43,25 @@ class SimproClient:
             if detail!=self.last_failure:
                 logging.exception('SimPro request failed: %s',method);self.last_failure=detail
             raise SimproError('Cannot reach SimPro. Keep SimPro Manager open. ('+detail+')') from exc
-    def _read(self):
-        devices=self.call('get_device_list')
+    def _check_version(self):
+        if time.monotonic()-self.version_checked_at<60:return
+        self.version_checked_at=time.monotonic()
+        try:
+            info=self.call('app_get_info') or {}
+            detected=str(info.get('app_version','Unknown'))
+            version=re.search(r'\d+\.\d+\.\d+\.\d+',detected)
+            self.compatibility={'tested':TESTED_LABEL,'detected':detected,'experimental':not version or version.group() not in TESTED_VERSIONS}
+        except SimproError:
+            self.compatibility={'tested':TESTED_LABEL,'detected':'Unknown','experimental':True}
+    def _read(self,devices=None):
+        if devices is None:devices=self.call('get_device_list')
         bases=[d for d in devices if d.get('product_type')=='base']
         if self.device_id: bases=[d for d in bases if d.get('device_uuid')==self.device_id]
         if len(bases)!=1: raise SimproError('Connect the selected wheelbase; exactly one base is required at first launch.')
         device=bases[0]
         if device.get('product_uuid')!='00000000010B0000': raise SimproError('This build is verified for the Alpha EVO Ultra.')
         self.device_id=device['device_uuid']
-        if time.monotonic()-self.version_checked_at>=60:
-            self.version_checked_at=time.monotonic()
-            try:
-                info=self.call('app_get_info') or {}
-                detected=str(info.get('app_version','Unknown'))
-                version=re.search(r'\d+\.\d+\.\d+\.\d+',detected)
-                self.compatibility={'tested':TESTED_LABEL,'detected':detected,'experimental':not version or version.group() not in TESTED_VERSIONS}
-            except SimproError:
-                self.compatibility={'tested':TESTED_LABEL,'detected':'Unknown','experimental':True}
+        self._check_version()
         identity={k:device[k] for k in ('device_uuid','product_uuid')}
         selected=self.call('preset_get_selected_dev_config',identity)
         preset_id=selected.get('preset_uuid')
@@ -74,10 +76,10 @@ class SimproClient:
         force=parts['servos']['total_force']
         if force:self.zero_reverse[preset_id]=force<0
         elif self.zero_reverse.get(preset_id):parts['servos']['total_force']=-0.0
-        values={s['key']:value_of(parts[s['part']],s['key']) for s in SETTINGS if s['field'] in parts[s['part']]}
+        values={s['key']:value_of(parts[s['part']],s['key']) for s in BASE_SETTINGS if s['field'] in parts[s['part']]}
         state=dict(connected=True,device=device['product_name'],device_id=device['device_uuid'],preset_id=preset_id,
                    preset_name=config.get('preset_name',''),max_torque=status['max_torque'],values=values,
-                   settings=[s for s in SETTINGS if s['key'] in values],compatibility=self.compatibility)
+                   settings=[s for s in BASE_SETTINGS if s['key'] in values],compatibility=self.compatibility)
         return state,identity,parts
     def snapshot(self):
         with self.lock: return self._read()[0]

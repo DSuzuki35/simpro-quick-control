@@ -1,5 +1,15 @@
 # Architecture
 
+## P-Active adapter (0.3.0)
+
+`pactive.ControlClient` extends the wheelbase adapter and combines independent device snapshots. The wheelbase and one P-Active controller may be used together or separately. P-Active exposes only eight validated scalar settings for the role reported by `active_pedal_select_id`; other stored preset channels are not treated as connected hardware.
+
+`setting_presets` associates each key with a physical-device/preset/role token. The service queues that token with the adjustment. Both the adapter and final readback reject target changes; the service also pauses before replacing an unavailable selected setting with a fallback. Whole-part pedal writes preserve unrelated fields and revalidate the fresh requested value before writing.
+
+`setting_context` supplies per-setting device and preset names to the UI. Browser controls rebuild when available settings change and repopulate existing bindings. Pedal-only operation has no invented Nm display. No factory movement, calibration or firmware-update endpoints are exposed by this app.
+
+Each regular refresh adds two preset-read calls while a P-Active is connected. Only small selected tuning values/metadata enter service snapshots; the full vendor preset is not sent to browsers. Native hotkeys, USB polling and desktop timing retain their existing cadence. Previous memory figures are historical wheelbase-only measurements, not a benchmark for this release.
+
 `core.py` defines verified setting metadata and pure adjustment/binding/visibility rules. `simpro.py` owns local HTTP, device/preset discovery and serialized read-modify-confirm operations. `service.py` owns assignments, acceleration, queueing, persistence and state. `input_reader.py` translates SDL joystick button edges into service actions. `server.py` serves local static pages and a token-protected API. `desktop.py` hosts the optional non-activating Tk popup and tray. `startup.py` manages an opt-in per-user Windows login startup entry. `main.py` wires their lifetimes together.
 
 ## SimPro integration

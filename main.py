@@ -3,7 +3,7 @@ import logging
 import sys
 import threading
 from pathlib import Path
-from simpro import SimproClient
+from pactive import ControlClient
 from service import ControlService
 from server import make_server
 from input_reader import run_inputs
@@ -18,7 +18,7 @@ def main():
     resources=Path(getattr(sys,'_MEIPASS',Path(__file__).parent))
     data=Path(args.data_dir) if args.data_dir else root/'data';data.mkdir(parents=True,exist_ok=True)
     logging.basicConfig(filename=data/'controller.log',level=logging.INFO,format='%(asctime)s %(levelname)s %(message)s')
-    service=ControlService(SimproClient(),data/'config.json')
+    service=ControlService(ControlClient(),data/'config.json')
     from startup import enabled as startup_enabled,set_enabled as set_startup
     service.startup_enabled=startup_enabled()
     if args.startup:service.visibility.last_activity-=601;service.quiet_startup=True
