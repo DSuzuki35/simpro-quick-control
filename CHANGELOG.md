@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 2026-11-23
+
+- Add assignable P-Active maximum force in kg, preserving curve points, travel and other settings.
+- Support 0.1 kg step increments for maximum force while retaining whole-number steps for existing settings.
+- Verify a live 65.4 → 65.3 → 65.4 kg change with exact restoration.
+
 ## 0.3.0 — 2026-11-23
 
 - Add eight P-Active tuning controls for its reported active pedal role, alongside existing wheelbase controls or without a wheelbase.

@@ -1,6 +1,6 @@
 # SimPro Quick Control
 
-Current version: **0.3.0** · [Changelog](CHANGELOG.md)
+Current version: **0.3.1** · [Changelog](CHANGELOG.md)
 
 Adjust SIMAGIC wheelbase and P-Active pedal tuning from assignable USB joystick buttons and button-mode encoders while driving. A compact desktop popup and a minimal VR browser page show the selected setting and live value.
 
@@ -11,7 +11,7 @@ Extract the **entire ZIP**, then run `SimPro Quick Control.exe`. Python is not r
 ## Features
 
 - 22 tuning and lighting controls exposed by the tested Alpha EVO Ultra configuration.
-- Eight P-Active controls for the attached pedal's reported role, using the same USB/keyboard assignments and VR readout.
+- Nine P-Active controls for the attached pedal's reported role, using the same USB/keyboard assignments and VR readout.
 - Shared encoder controls with next/previous setting selection, dedicated per-setting pairs, or both.
 - Assignable global keyboard shortcuts alongside every shared and dedicated USB action.
 - Per-setting increments; optional encoder acceleration from 1× to 2×, 5× and 10×.
@@ -86,13 +86,13 @@ The integration is unofficial and is not affiliated with or endorsed by SIMAGIC.
 
 ## P-Active
 
-Version 0.3.0 adds damping on/off, press/release damping, friction on/off, press/release friction, and front/back stop strength. The eight controls appear under **P-Active Brake**, **P-Active Throttle** or **P-Active Clutch**, according to SimPro's reported active role. P-Active can be used without a wheelbase. One P-Active controller is supported; multiple controllers are deliberately not selected automatically.
+Version 0.3.0 adds damping on/off, press/release damping, friction on/off, press/release friction, and front/back stop strength. Version 0.3.1 adds **Maximum force** in kg (default 1 kg per click, configurable down to 0.1 kg). It preserves the pedal travel, minimum force and curve points. The nine controls appear under **P-Active Brake**, **P-Active Throttle** or **P-Active Clutch**, according to SimPro's reported active role. P-Active can be used without a wheelbase. One P-Active controller is supported; multiple controllers are deliberately not selected automatically.
 
 The adapter uses fresh `pedals` preset configuration, preserves other fields, and confirms each change. Every queued adjustment carries the physical device, preset and role identity. Losing or changing the currently selected target pauses controls before another input can adjust a fallback setting. Existing wheelbase bindings remain compatible; add pedal settings to the cycle if upgrading an existing configuration.
 
 Hardware check: SimPro 3.2.5.13819 with P-Active V1.0.18 reported the brake role. Press damping was changed 23 → 22 → 23 and all other pedal fields were preserved; wheelbase force remained unchanged. Other roles use the same discovered schema but were not physically tested. The version advisory describes SimPro releases tested with the wheelbase, not every possible device/firmware combination.
 
-This release does not add force/travel curves, telemetry effect editing, or arbitrary motor-position control. [Motion research](docs/pactive-motion-research.md) documents a candidate position endpoint, the firmware inspection, and the remaining readback and operating-mode limitations for a rudder mode. No active movement through that endpoint has been demonstrated.
+This release does not add a curve-shape or pedal-travel editor, telemetry effect editing, or arbitrary motor-position control. [Motion research](docs/pactive-motion-research.md) documents a candidate position endpoint, the firmware inspection, and the remaining readback and operating-mode limitations for a rudder mode. No active movement through that endpoint has been demonstrated.
 
 ## Telemetry FFB
 
@@ -136,7 +136,7 @@ Build the executable and distributable ZIP:
 .venv\Scripts\python tools\build_release.py
 ```
 
-Output: `dist/v0.3.0/SimPro-Quick-Control-Windows-x64.zip`. Use `--output <directory>` for another build destination. The builder refuses to overwrite a package containing runtime user data. See [architecture](docs/architecture.md) for the module map and integration contract. The release source is tagged alongside the binary.
+Output: `dist/v0.3.1/SimPro-Quick-Control-Windows-x64.zip`. Use `--output <directory>` for another build destination. The builder refuses to overwrite a package containing runtime user data. See [architecture](docs/architecture.md) for the module map and integration contract. The release source is tagged alongside the binary.
 
 Tests cover control limits, sign handling, mappings, acceleration, queue ordering/expiry, disconnect handling, inactive visibility, readback confirmation, HTTP protection and avoiding unnecessary disk writes. Physical encoder timing, headset rendering and other SimPro releases still need testing on each user's setup.
 

@@ -1,8 +1,8 @@
 # Architecture
 
-## P-Active adapter (0.3.0)
+## P-Active adapter (0.3.1)
 
-`pactive.ControlClient` extends the wheelbase adapter and combines independent device snapshots. The wheelbase and one P-Active controller may be used together or separately. P-Active exposes only eight validated scalar settings for the role reported by `active_pedal_select_id`; other stored preset channels are not treated as connected hardware.
+`pactive.ControlClient` extends the wheelbase adapter and combines independent device snapshots. The wheelbase and one P-Active controller may be used together or separately. P-Active exposes nine validated scalar settings for the role reported by `active_pedal_select_id`; other stored preset channels are not treated as connected hardware.
 
 `setting_presets` associates each key with a physical-device/preset/role token. The service queues that token with the adjustment. Both the adapter and final readback reject target changes; the service also pauses before replacing an unavailable selected setting with a fallback. Whole-part pedal writes preserve unrelated fields and revalidate the fresh requested value before writing.
 
@@ -46,3 +46,5 @@ USB and keyboard actions share the same queue, range checks and write-confirmati
 ## Resource choices
 
 There is no frontend framework or JavaScript build pipeline. The backend sleeps between work, caches optional version metadata, avoids unchanged preference writes and skips copying the full state for hidden native visibility checks. Unassigned USB controllers are closed except during learning. `--headless` does not import Tk or the tray library. All data remains local.
+
+Maximum force routes to `paddle_groups[role].paddles[0].axis_paddle.y_max`. Only an unambiguous single-paddle curve is accepted. The fresh complete group is preserved except for this field; output is clamped to the existing minimum force and 180 kg. Decimal steps are supported only for this setting (0.1 kg resolution).

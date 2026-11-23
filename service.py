@@ -5,7 +5,7 @@ import threading
 import time
 from collections import deque
 from pathlib import Path
-from core import SETTINGS,BY_KEY,Bindings,Visibility
+from core import SETTINGS,BY_KEY,Bindings,Visibility,valid_step
 from keyboard_reader import validate_shortcut,shortcut_label
 from version import __version__
 
@@ -47,7 +47,7 @@ class ControlService:
         if 'steps' in patch:
             if not isinstance(patch['steps'],dict): raise ValueError('Invalid steps')
             for k,n in patch['steps'].items():
-                if k not in BY_KEY or type(n) is not int or not 1<=n<=100: raise ValueError('Step must be 1–100')
+                if not valid_step(k,n): raise ValueError('Invalid step for this setting')
         if 'cycle' in patch and (not isinstance(patch['cycle'],list) or not patch['cycle'] or any(k not in BY_KEY for k in patch['cycle'])):
             raise ValueError('Choose at least one cycle setting')
         if 'bindings' in patch:

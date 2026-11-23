@@ -47,28 +47,49 @@ for part_id, role in ((1,'Clutch'),(2,'Brake'),(3,'Throttle')):
                      '%' if maximum==100 else '',choices=choices,part='pedals',field=field)
         item.update(device='pactive',part_id=part_id,boolean=field.startswith('is_'))
         PEDAL_SETTINGS.append(item)
+    item=setting(f'pactive_{part_id}_max_force','Maximum force','P-Active '+role,0,180,'kg',part='paddle_groups',field='y_max')
+    item.update(device='pactive',part_id=part_id,boolean=False,precision=1,step_min=.1,
+                path=['paddles',0,'axis_paddle','y_max'])
+    PEDAL_SETTINGS.append(item)
 SETTINGS += PEDAL_SETTINGS
 BY_KEY = {s['key']:s for s in SETTINGS}
 
+def field_value(current, setting):
+    value=current
+    for key in setting.get('path',[setting['field']]):value=value[key]
+    return value
+
+def valid_step(key, step):
+    if key not in BY_KEY or type(step) not in (int,float) or not math.isfinite(step):return False
+    minimum=BY_KEY[key].get('step_min',1)
+    return minimum<=step<=100 and step==round(step,BY_KEY[key].get('precision',0))
+
 def value_of(current, key):
     s=BY_KEY[key]
-    value=current[s['field']]
+    value=field_value(current,s)
     if key=='reverse': return int(math.copysign(1,value)<0)
     if key=='total_force': return abs(value)
-    return int(value)
+    return round(value,s['precision']) if s.get('precision') else int(value)
 
 def adjusted_config(current, key, delta, step=1):
     if key not in BY_KEY or not isinstance(delta,(int,float)) or not math.isfinite(delta):
         raise ValueError('Unknown setting or invalid change')
-    if not isinstance(step,(int,float)) or not math.isfinite(step) or step<1 or step>100 or int(step)!=step:
-        raise ValueError('Step must be a whole number from 1 to 100')
+    if not valid_step(key,step):raise ValueError('Invalid step for this setting')
     s=BY_KEY[key]
-    if s['field'] not in current: raise ValueError('Setting is unavailable')
+    try:field_value(current,s)
+    except (KeyError,IndexError,TypeError):raise ValueError('Setting is unavailable')
     maximum=s['max']
+    minimum=s['min']
+    if s.get('path'):minimum=max(minimum,math.ceil(current['paddles'][0]['axis_paddle']['y_min']*10-1e-8)/10)
     if key=='wheel_angle_limit': maximum=min(maximum,current.get('max_wheel_angle',maximum))
-    value=int(max(s['min'],min(maximum,value_of(current,key)+delta*step)))
+    value=max(minimum,min(maximum,value_of(current,key)+delta*step))
+    value=round(value,s['precision']) if s.get('precision') else int(value)
     out=copy.deepcopy(current)
-    if key=='reverse': out['total_force']=math.copysign(abs(current['total_force']),-1 if value else 1)
+    if s.get('path'):
+        target=out
+        for part in s['path'][:-1]:target=target[part]
+        target[s['path'][-1]]=value
+    elif key=='reverse': out['total_force']=math.copysign(abs(current['total_force']),-1 if value else 1)
     elif key=='total_force': out['total_force']=math.copysign(value,current['total_force'])
     elif key=='max_wheel_angle': out.update(max_wheel_angle=value,wheel_angle_limit=value)
     elif key=='ring_on': out['is_on']=bool(value)

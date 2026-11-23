@@ -14,6 +14,7 @@ class Rig(ControlClient):
         ]
         self.pedal=dict(is_damping=True,damp_pressed=39,damp_released=69,is_friction=False,friction_strength=50,rev_friction_strength=50,front_stop_level=1,back_stop_level=1,future_field={'keep':7})
         self.preset='456';self.writes=[];self.accept=True
+        self.curve={'paddles':[{'axis_paddle':{'y_max':65.4,'y_min':0,'x_min':5,'x_max':75,'calibrations':[{'x':0,'y':0},{'x':100,'y':100}]}}],'future':12}
 
     def call(self,method,body=None):
         body=body or {}
@@ -23,10 +24,12 @@ class Rig(ControlClient):
         if method=='preset_get_selected_dev_config':return {'preset_uuid':'123' if base else self.preset}
         if method=='device_base_get_status':return {'device_uuid':'BASE','max_torque':28}
         if method=='preset_get_dev_config':
-            return {'preset_name':'Test','servos':{'1':{'total_force':90}},'config':{},'light_groups':{}} if base else {'preset_name':'Pedal test','pedals':{'1':copy.deepcopy(self.pedal),'2':copy.deepcopy(self.pedal),'3':copy.deepcopy(self.pedal)}}
+            return {'preset_name':'Test','servos':{'1':{'total_force':90}},'config':{},'light_groups':{}} if base else {'preset_name':'Pedal test','pedals':{str(n):copy.deepcopy(self.pedal) for n in (1,2,3)},'paddle_groups':{str(n):copy.deepcopy(self.curve) for n in (1,2,3)}}
         if method=='preset_set_dev_config':
             self.writes.append(copy.deepcopy(body))
-            if self.accept:self.pedal=copy.deepcopy(body['config'])
+            if self.accept:
+                if body['part_type']=='paddle_groups':self.curve=copy.deepcopy(body['config'])
+                else:self.pedal=copy.deepcopy(body['config'])
             return None
         raise AssertionError(method)
 
@@ -35,7 +38,7 @@ def test_base_and_only_connected_pedal_role_share_settings():
     rig=Rig();s=rig.snapshot()
     assert s['values']['total_force']==90
     assert s['values']['pactive_2_damp_pressed']==39
-    assert len([k for k in s['values'] if k.startswith('pactive_')])==8
+    assert len([k for k in s['values'] if k.startswith('pactive_')])==9
     assert not any(k.startswith('pactive_1_') for k in s['values'])
 
 
@@ -137,3 +140,45 @@ def test_fresh_field_validation_cannot_be_bypassed(bad):
     rig=ChangingRig()
     with pytest.raises((SimproError,ValueError)):rig.adjust('pactive_2_damp_pressed',1)
     assert not rig.writes
+
+
+def test_force_preserves_fraction_and_entire_curve():
+    rig=Rig();key='pactive_2_max_force';before=copy.deepcopy(rig.curve)
+    assert rig.snapshot()['values'][key]==65.4
+    out=rig.adjust(key,-1,.1)
+    assert out['values'][key]==65.3
+    before['paddles'][0]['axis_paddle']['y_max']=65.3
+    assert rig.curve==before
+    assert rig.writes[0]['part_type']=='paddle_groups'
+    assert rig.writes[0]['part_id']==2
+    assert rig.pedal['damp_pressed']==39
+
+
+def test_force_clamps_above_minimum_and_below_180():
+    rig=Rig();axis=rig.curve['paddles'][0]['axis_paddle'];axis.update(y_min=65,y_max=65.4)
+    assert rig.adjust('pactive_2_max_force',-100)['values']['pactive_2_max_force']==65
+    assert rig.adjust('pactive_2_max_force',100,100)['values']['pactive_2_max_force']==180
+
+
+@pytest.mark.parametrize('bad',[None,True,float('nan'),181,-1,'65.4'])
+def test_invalid_force_is_not_offered(bad):
+    rig=Rig();rig.curve['paddles'][0]['axis_paddle']['y_max']=bad
+    assert 'pactive_2_max_force' not in rig.snapshot()['values']
+    with pytest.raises(SimproError):rig.adjust('pactive_2_max_force',1)
+    assert not rig.writes
+
+
+def test_force_requires_unambiguous_curve_and_valid_minimum():
+    rig=Rig();rig.curve['paddles'].append(copy.deepcopy(rig.curve['paddles'][0]))
+    assert 'pactive_2_max_force' not in rig.snapshot()['values']
+    rig.curve['paddles'].pop();rig.curve['paddles'][0]['axis_paddle']['y_min']=70
+    assert 'pactive_2_max_force' not in rig.snapshot()['values']
+
+
+def test_force_step_configuration_and_service_route(tmp_path):
+    from service import ControlService
+    rig=Rig();svc=ControlService(rig,tmp_path/'config.json');key='pactive_2_max_force'
+    svc.update_config({'steps':{key:.1}});svc.enable(True);svc.adjust(key,1)
+    assert rig.curve['paddles'][0]['axis_paddle']['y_max']==65.5
+    for steps in ({key:.01},{key:True},{key:.1000000001},{'pactive_2_damp_pressed':.1},{'total_force':1.000000001}):
+        with pytest.raises(ValueError):svc.update_config({'steps':steps})

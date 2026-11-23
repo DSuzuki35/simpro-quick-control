@@ -1,7 +1,7 @@
 """P-Active preset tuning. No factory movement or calibration commands."""
 import math
 import time
-from core import PEDAL_SETTINGS,BY_KEY,value_of,adjusted_config
+from core import PEDAL_SETTINGS,BY_KEY,value_of,adjusted_config,field_value
 from simpro import SimproClient,SimproError
 
 PRODUCT='0000000003050000'
@@ -26,21 +26,28 @@ class ControlClient(SimproClient):
         if not isinstance(preset,str) or not preset.isdigit():raise SimproError('No active P-Active preset')
         identity['preset_uuid']=preset
         config=self.call('preset_get_dev_config',identity)
-        current=config.get('pedals',{}).get(str(part),{})
+        parts={name:config.get(name,{}).get(str(part),{}) for name in ('pedals','paddle_groups')}
         settings=[];values={}
         for setting in PEDAL_SETTINGS:
             if setting['part_id']!=part:continue
-            raw=current.get(setting['field'])
+            current=parts[setting['part']]
+            try:raw=field_value(current,setting)
+            except (KeyError,IndexError,TypeError):continue
             if setting['boolean']:
                 valid=type(raw) is bool
             else:
-                valid=type(raw) in (int,float) and math.isfinite(raw) and int(raw)==raw and setting['min']<=raw<=setting['max']
+                valid=type(raw) in (int,float) and math.isfinite(raw) and (setting.get('precision') or int(raw)==raw) and setting['min']<=raw<=setting['max']
+            if setting.get('path'):
+                paddles=current.get('paddles')
+                if not isinstance(paddles,list) or len(paddles)!=1:continue
+                axis=paddles[0]['axis_paddle'];low=axis.get('y_min')
+                valid=valid and type(low) in (int,float) and math.isfinite(low) and 0<=low<=raw and axis.get('y_unit','') in ('','kg')
             if valid:settings.append(setting);values[setting['key']]=value_of(current,setting['key'])
         if not settings:raise SimproError('P-Active returned an unfamiliar settings format.')
         self.pedal_id=device['device_uuid'];self._check_version()
         state=dict(connected=True,device='P-Active',device_id=device['device_uuid'],preset_id=preset,
                    preset_name=config.get('preset_name',''),max_torque=0,settings=settings,values=values,compatibility=self.compatibility)
-        return state,identity,current,part
+        return state,identity,parts,part
 
     @staticmethod
     def _target(state,part=0):
@@ -77,12 +84,13 @@ class ControlClient(SimproClient):
             if BY_KEY[key].get('device')!='pactive':
                 super().adjust(key,delta,step,expected_preset=state['preset_id'])
                 return self.snapshot()
-            latest,identity,current,part=self._pedal_read(self.call('get_device_list'))
+            latest,identity,parts,part=self._pedal_read(self.call('get_device_list'))
             if self._target(latest,part)!=token:raise SimproError('P-Active target changed before adjustment.')
             if key not in latest['values']:raise SimproError('P-Active setting became unavailable or invalid before adjustment.')
+            part_type=BY_KEY[key]['part'];current=parts[part_type]
             config=adjusted_config(current,key,delta,step)
             if config==current:return state
-            self.call('preset_set_dev_config',{**identity,'part_type':'pedals','part_id':part,'config':config})
+            self.call('preset_set_dev_config',{**identity,'part_type':part_type,'part_id':part,'config':config})
             expected=value_of(config,key);deadline=time.monotonic()+self.confirm_timeout
             while time.monotonic()<deadline:
                 time.sleep(.05)
