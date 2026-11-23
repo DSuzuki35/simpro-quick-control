@@ -75,12 +75,16 @@ def test_reverse_can_be_selected_at_zero_without_force(rig):
     client.adjust('total_force',1)
     assert data['servo']['total_force']==-1
 
-def test_other_versions_are_experimental_and_can_adjust(rig):
-    client,data=rig;data['version']='V3.4.0.99999-future'
+@pytest.mark.parametrize('version',['V3.4.0.99999-future','C3.2.6.13816-6bcf7d5d','Unknown'])
+def test_other_versions_are_experimental_and_can_adjust(rig,version):
+    client,data=rig;data['version']=version
     state=client.adjust('total_force',-1)
     assert state['values']['total_force']==99
     assert state['compatibility']['experimental']
 
-def test_tested_version_is_recognized(rig):
-    client,data=rig
-    assert not client.snapshot()['compatibility']['experimental']
+@pytest.mark.parametrize('version',['V3.2.4.13771-0518ecbb','V3.2.5.13819-5dd62489'])
+def test_tested_version_is_recognized(rig,version):
+    client,data=rig;data['version']=version
+    state=client.adjust('total_force',-1)
+    assert state['values']['total_force']==99
+    assert not state['compatibility']['experimental']

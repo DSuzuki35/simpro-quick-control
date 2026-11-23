@@ -1,6 +1,6 @@
 SIMPRO QUICK CONTROL — portable Windows app
 
-Version 0.2.0
+Version 0.2.1
 
 Start
 1. Keep SimPro Manager running, with your Alpha EVO Ultra connected.
@@ -57,8 +57,10 @@ Scope and persistence
 22 verified tuning/light controls, including FFB strength, mechanical and game
 effects, steering limits, reverse, and ring lighting. No calibration, firmware,
 torque unlock, or raw force injection. Nm is the configured output limit, not
-a measured instantaneous force. Hardware verification: SimPro 3.2.4.13771,
-Alpha EVO Ultra (28 Nm). Other wheelbase models are intentionally rejected.
+a measured instantaneous force. Hardware verification: SimPro 3.2.4.13771 and
+3.2.5.13819, Alpha EVO Ultra (28 Nm). SimPro 3.2.6.13816 was read-tested only;
+it and other versions remain experimental, without a version-number block.
+Other wheelbase models are intentionally rejected.
 Changes affect the active live preset. Save in SimPro to retain your tuning.
 Assignments, steps, selected setting, acceleration, and timer are stored in
 data/config.json alongside the executable. Reverse direction at zero strength

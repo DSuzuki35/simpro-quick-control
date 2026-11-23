@@ -8,6 +8,9 @@ from urllib.parse import urlsplit
 import re
 from core import SETTINGS,BY_KEY,value_of,adjusted_config
 
+TESTED_VERSIONS=('3.2.4.13771','3.2.5.13819')
+TESTED_LABEL=', '.join(TESTED_VERSIONS)
+
 class SimproError(Exception): pass
 
 class SimproClient:
@@ -21,7 +24,7 @@ class SimproClient:
         self.device_id=None
         self.zero_reverse={}
         self.last_failure=None
-        self.compatibility={'tested':'3.2.4.13771','detected':'Unknown','experimental':True}
+        self.compatibility={'tested':TESTED_LABEL,'detected':'Unknown','experimental':True}
         self.version_checked_at=-60
     def call(self,method,body=None):
         try:
@@ -54,9 +57,9 @@ class SimproClient:
                 info=self.call('app_get_info') or {}
                 detected=str(info.get('app_version','Unknown'))
                 version=re.search(r'\d+\.\d+\.\d+\.\d+',detected)
-                self.compatibility={'tested':'3.2.4.13771','detected':detected,'experimental':not version or version.group()!='3.2.4.13771'}
+                self.compatibility={'tested':TESTED_LABEL,'detected':detected,'experimental':not version or version.group() not in TESTED_VERSIONS}
             except SimproError:
-                self.compatibility={'tested':'3.2.4.13771','detected':'Unknown','experimental':True}
+                self.compatibility={'tested':TESTED_LABEL,'detected':'Unknown','experimental':True}
         identity={k:device[k] for k in ('device_uuid','product_uuid')}
         selected=self.call('preset_get_selected_dev_config',identity)
         preset_id=selected.get('preset_uuid')

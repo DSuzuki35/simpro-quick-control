@@ -1,6 +1,6 @@
 # SimPro Quick Control
 
-Current release: **0.2.0** · [Changelog](CHANGELOG.md)
+Current release: **0.2.1** · [Changelog](CHANGELOG.md)
 
 Adjust SIMAGIC wheelbase tuning from assignable USB joystick buttons and button-mode encoders while driving. A compact desktop popup and a minimal VR browser page show the selected setting and live value.
 
@@ -69,11 +69,13 @@ Shortcuts are registered with Windows and work while another application has foc
 
 Each press applies one configured increment. Holding a shortcut does not repeat, and encoder acceleration does not affect keyboard shortcuts. Controls must be enabled for value changes; next/previous selection and Show popup remain available while paused. Shortcuts do nothing during USB learning. Assigned combinations are reserved for the controller and may not reach the foreground application, so choose combinations that do not conflict with your game's bindings.
 
-To upgrade from 0.1.0, quit the old controller, extract 0.2.0, and copy your old `data/config.json` into the new application's `data` folder. Existing USB assignments and preferences load without conversion. If Windows startup was enabled, disable it before moving and re-enable it from the new executable.
+To upgrade, quit the old controller, extract the new release, and copy your old `data/config.json` into the new application's `data` folder. Existing USB/keyboard assignments and preferences load without conversion. If Windows startup was enabled, disable it before moving and re-enable it from the new executable.
 
 ## Compatibility
 
-**Optimized and hardware-tested with SimPro Manager 3.2.4.13771 and Alpha EVO Ultra, firmware V2.3.6 (28 Nm).**
+**Hardware-tested with SimPro Manager 3.2.4.13771 and 3.2.5.13819 on Alpha EVO Ultra (28 Nm).** The original test used base firmware V2.3.6; the 3.2.5 test used V2.3.8.
+
+On 2026-11-23, all 22 settings were read from installed 3.2.5.13819. FFB strength, ring brightness and ring on/off were changed, confirmed by live readback, and restored. These cover all three configuration parts used by the app. Installed 3.2.6.13816 also returned all 22 settings, but its write test was not completed before the installation was downgraded. It therefore keeps the experimental advisory. See [compatibility test details](docs/compatibility.md).
 
 The app reads SimPro's version and shows a compatibility note. Other versions are **experimental, not blocked by version number**. Unknown version metadata does not prevent adjustment when the required API and settings are available. Compatibility tests cover a different version string, but that does not replace testing another installed SimPro release.
 
@@ -123,7 +125,7 @@ Build the executable and distributable ZIP:
 .venv\Scripts\python tools\build_release.py
 ```
 
-Output: `dist/v0.2.0/SimPro-Quick-Control-Windows-x64.zip`. Use `--output <directory>` for another build destination. The builder refuses to overwrite a package containing runtime user data. See [architecture](docs/architecture.md) for the module map and integration contract. The release source is tagged alongside the binary.
+Output: `dist/v0.2.1/SimPro-Quick-Control-Windows-x64.zip`. Use `--output <directory>` for another build destination. The builder refuses to overwrite a package containing runtime user data. See [architecture](docs/architecture.md) for the module map and integration contract. The release source is tagged alongside the binary.
 
 Tests cover control limits, sign handling, mappings, acceleration, queue ordering/expiry, disconnect handling, inactive visibility, readback confirmation, HTTP protection and avoiding unnecessary disk writes. Physical encoder timing, headset rendering and other SimPro releases still need testing on each user's setup.
 
